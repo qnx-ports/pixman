@@ -12,6 +12,7 @@ static const pixman_format_code_t formats[] =
     PIXMAN_a4r4g4b4,
     PIXMAN_a8,
     PIXMAN_rgba_float,
+    PIXMAN_rgba_float16,
 };
 
 static const pixman_format_code_t alpha_formats[] =
@@ -21,6 +22,7 @@ static const pixman_format_code_t alpha_formats[] =
     PIXMAN_a2r10g10b10,
     PIXMAN_a4r4g4b4,
     PIXMAN_rgba_float,
+    PIXMAN_rgba_float16,
 };
 
 static const int origins[] =
@@ -43,10 +45,12 @@ make_image (pixman_format_code_t format)
     uint8_t bpp = PIXMAN_FORMAT_BPP (format) / 8;
     pixman_image_t *image;
 
-    if (format != PIXMAN_rgba_float)
-	bits = (uint32_t *)make_random_bytes (WIDTH * HEIGHT * bpp);
-    else
+    if (format == PIXMAN_rgba_float)
 	bits = (uint32_t *)make_random_floats (WIDTH * HEIGHT * bpp);
+    else if (format == PIXMAN_rgba_float16)
+	bits = (uint32_t *)make_random_halfs (WIDTH * HEIGHT * bpp);
+    else
+	bits = (uint32_t *)make_random_bytes (WIDTH * HEIGHT * bpp);
 
     image = pixman_image_create_bits (format, WIDTH, HEIGHT, bits, WIDTH * bpp);
 
@@ -104,6 +108,12 @@ get_alpha (pixman_image_t *image, int x, int y, int orig_x, int orig_y)
     {
 	return ((float *)bits)[y * WIDTH * 4 + x * 4 + 3];
     }
+    else if (image->bits.format == PIXMAN_rgba_float16)
+    {
+        uint16_t *hbits = (uint16_t *)bits;
+        uint16_t half = hbits[y * WIDTH * 4 + x * 4 + 3];
+        return convert_half_to_float(half);
+    }
     else
     {
 	assert (0);
@@ -147,6 +157,13 @@ get_red (pixman_image_t *image, int x, int y, int orig_x, int orig_y)
 	double tmp = ((float *)bits)[y * WIDTH * 4 + x * 4];
 	return tmp * 65535.;
     }
+    else if (image->bits.format == PIXMAN_rgba_float16)
+    {
+        uint16_t *hbits = (uint16_t *)bits;
+        uint16_t half = hbits[y * WIDTH * 4 + x * 4];
+        double tmp = convert_half_to_float(half);
+        return tmp * 65535.;
+    }
     else
     {
 	assert (0);
@@ -161,6 +178,8 @@ precision_bits_for_float_type(pixman_format_code_t x)
 {
     if (x == PIXMAN_rgba_float)
         return 24;
+    if (x == PIXMAN_rgba_float16)
+        return 10;
     assert(0);
 }
 

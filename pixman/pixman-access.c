@@ -192,6 +192,13 @@
     ((uint8_t *) ((bits) + offset0 +                                    \
                   ((stride) >> 1) * ((line) >> 1)))
 
+/* union type for float16 construction */
+union fi {
+    float f;
+    int32_t i;
+    uint32_t ui;
+};
+
 /* Misc. helpers */
 
 static force_inline void
@@ -682,6 +689,54 @@ fetch_scanline_rgbaf_float (bits_image_t   *image,
 	buffer->a = *pixel++;
     }
 }
+
+static float
+convert_half_to_float(uint16_t f16)
+{
+    union fi infnan;
+    union fi magic;
+    union fi f32;
+
+    infnan.ui = 0x8f << 23;
+    infnan.f = 65536.0f;
+    magic.ui  = 0xef << 23;
+
+    /* Exponent / Mantissa */
+    f32.ui = (f16 & 0x7fff) << 13;
+
+    /* Adjust */
+    f32.f *= magic.f;
+    /* XXX: The magic mul relies on denorms being available */
+
+    /* Inf / NaN */
+    if (f32.f >= infnan.f)
+        f32.ui |= 0xff << 23;
+
+    /* Sign */
+    f32.ui |= (f16 & 0x8000) << 16;
+
+    return f32.f;
+}
+
+static void
+fetch_scanline_rgbaf_float16 (bits_image_t   *image,
+                              int             x,
+                              int             y,
+                              int             width,
+                              uint32_t *      b,
+                              const uint32_t *mask)
+{
+    const uint16_t *bits = (uint16_t *)image->bits + y * (image->rowstride*2);
+    const uint16_t *pixel = bits + x * 4;
+    argb_t *buffer = (argb_t *)b;
+
+    for (; width--; buffer++) {
+        buffer->r = convert_half_to_float(*pixel++);
+        buffer->g = convert_half_to_float(*pixel++);
+        buffer->b = convert_half_to_float(*pixel++);
+        buffer->a = convert_half_to_float(*pixel++);
+    }
+}
 #endif
 
 static void
@@ -879,6 +934,23 @@ fetch_pixel_rgbaf_float (bits_image_t *image,
 
     return argb;
 }
+
+static argb_t
+fetch_pixel_rgbaf_float16 (bits_image_t *image,
+			   int           offset,
+			   int           line)
+{
+    uint16_t *bits = (uint16_t *)image->bits + line * (image->rowstride*2);
+    argb_t argb;
+
+    argb.r = convert_half_to_float(bits[offset * 4]);
+    argb.g = convert_half_to_float(bits[offset * 4 + 1]);
+    argb.b = convert_half_to_float(bits[offset * 4 + 2]);
+    argb.a = convert_half_to_float(bits[offset * 4 + 3]);
+
+    return argb;
+}
+
 #endif
 
 static argb_t
@@ -1073,6 +1145,83 @@ store_scanline_rgbf_float (bits_image_t *  image,
 	*bits++ = values->r;
 	*bits++ = values->g;
 	*bits++ = values->b;
+    }
+}
+
+static uint16_t
+convert_float_to_half(float f)
+{
+    uint32_t sign_mask  = 0x80000000;
+    uint32_t round_mask = ~0xfff;
+    uint32_t f32inf = 0xff << 23;
+    uint32_t f16inf = 0x1f << 23;
+    uint32_t sign;
+    union fi magic;
+    union fi f32;
+    uint16_t f16;
+
+    magic.ui = 0xf << 23;
+
+    f32.f = f;
+
+    /* Sign */
+    sign = f32.ui & sign_mask;
+    f32.ui ^= sign;
+
+    if (f32.ui == f32inf) {
+        /* Inf */
+        f16 = 0x7c00;
+    } else if (f32.ui > f32inf) {
+        /* NaN */
+        f16 = 0x7e00;
+    } else {
+        /* Number */
+        f32.ui &= round_mask;
+        f32.f  *= magic.f;
+        f32.ui -= round_mask;
+        /*
+         * XXX: The magic mul relies on denorms being available, otherwise all
+         * f16 denorms get flushed to zero.
+         */
+        /*
+         * Clamp to max finite value if overflowed.
+         * OpenGL has completely undefined rounding behavior for float to
+         * half-float conversions, and this matches what is mandated for float
+         * to fp11/fp10, which recommend round-to-nearest-finite too.
+         * (d3d10 is deeply unhappy about flushing such values to infinity, and
+         * while it also mandates round-to-zero it doesn't care nearly as much
+         * about that.)
+         *
+         * pixman doesn't have any preconceptions, so let's do what Mesa does.
+         */
+        if (f32.ui > f16inf)
+            f32.ui = f16inf - 1;
+
+        f16 = f32.ui >> 13;
+    }
+
+    /* Sign */
+    f16 |= sign >> 16;
+
+    return f16;
+}
+
+static void
+store_scanline_rgbaf_float16 (bits_image_t *  image,
+                              int             x,
+                              int             y,
+                              int             width,
+                              const uint32_t *v)
+{
+    uint16_t *bits = (uint16_t *)image->bits + (image->rowstride*2) * y + 4 * x;
+    const argb_t *values = (argb_t *)v;
+
+    for (; width; width--, values++)
+    {
+        *bits++ = convert_float_to_half(values->r);
+        *bits++ = convert_float_to_half(values->g);
+        *bits++ = convert_float_to_half(values->b);
+        *bits++ = convert_float_to_half(values->a);
     }
 }
 #endif
@@ -1476,6 +1625,11 @@ static const format_info_t accessors[] =
       NULL, fetch_scanline_rgbf_float,
       fetch_pixel_generic_lossy_32, fetch_pixel_rgbf_float,
       NULL, store_scanline_rgbf_float },
+
+    { PIXMAN_rgba_float16,
+      NULL, fetch_scanline_rgbaf_float16,
+      fetch_pixel_generic_lossy_32, fetch_pixel_rgbaf_float16,
+      NULL, store_scanline_rgbaf_float16 },
 #endif
 
     { PIXMAN_a2r10g10b10,

@@ -86,6 +86,103 @@ is_little_endian (void)
 void
 image_endian_swap (pixman_image_t *img);
 
+/* convert between halfs and floats
+ */
+
+/* union type for float16 construction */
+union fi {
+    float f;
+    int32_t i;
+    uint32_t ui;
+};
+
+static inline float
+convert_half_to_float(uint16_t f16)
+{
+    union fi infnan;
+    union fi magic;
+    union fi f32;
+
+    infnan.ui = 0x8f << 23;
+    infnan.f = 65536.0f;
+    magic.ui  = 0xef << 23;
+
+    /* Exponent / Mantissa */
+    f32.ui = (f16 & 0x7fff) << 13;
+
+    /* Adjust */
+    f32.f *= magic.f;
+    /* XXX: The magic mul relies on denorms being available */
+
+    /* Inf / NaN */
+    if (f32.f >= infnan.f)
+        f32.ui |= 0xff << 23;
+
+    /* Sign */
+    f32.ui |= (f16 & 0x8000) << 16;
+
+    return f32.f;
+}
+
+static inline uint16_t
+convert_float_to_half(float f)
+{
+    uint32_t sign_mask  = 0x80000000;
+    uint32_t round_mask = ~0xfff;
+    uint32_t f32inf = 0xff << 23;
+    uint32_t f16inf = 0x1f << 23;
+    uint32_t sign;
+    union fi magic;
+    union fi f32;
+    uint16_t f16;
+
+    magic.ui = 0xf << 23;
+
+    f32.f = f;
+
+    /* Sign */
+    sign = f32.ui & sign_mask;
+    f32.ui ^= sign;
+
+    if (f32.ui == f32inf) {
+        /* Inf */
+        f16 = 0x7c00;
+    } else if (f32.ui > f32inf) {
+        /* NaN */
+        f16 = 0x7e00;
+    } else {
+        /* Number */
+        f32.ui &= round_mask;
+        f32.f  *= magic.f;
+        f32.ui -= round_mask;
+        /*
+         * XXX: The magic mul relies on denorms being available, otherwise all
+         * f16 denorms get flushed to zero.
+         */
+        /*
+         * Clamp to max finite value if overflowed.
+         * OpenGL has completely undefined rounding behavior for float to
+         * half-float conversions, and this matches what is mandated for float
+         * to fp11/fp10, which recommend round-to-nearest-finite too.
+         * (d3d10 is deeply unhappy about flushing such values to infinity, and
+         * while it also mandates round-to-zero it doesn't care nearly as much
+         * about that.)
+         *
+         * pixman doesn't have any preconceptions, so let's do what Mesa does.
+         */
+        if (f32.ui > f16inf)
+            f32.ui = f16inf - 1;
+
+        f16 = f32.ui >> 13;
+    }
+
+    /* Sign */
+    f16 |= sign >> 16;
+
+    return f16;
+}
+
+
 #if defined (HAVE_MPROTECT) && defined (HAVE_GETPAGESIZE) && \
     defined (HAVE_SYS_MMAN_H) && defined (HAVE_MMAP)
 /* fence_malloc and friends have working fence implementation.
@@ -121,6 +218,8 @@ uint8_t *
 make_random_bytes (int n_bytes);
 float *
 make_random_floats (int n_bytes);
+uint16_t *
+make_random_halfs (int n_bytes);
 
 /* Return current time in seconds */
 double

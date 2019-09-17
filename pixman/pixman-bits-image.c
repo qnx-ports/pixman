@@ -1285,6 +1285,9 @@ _pixman_bits_image_init (pixman_image_t *     image,
     if (PIXMAN_FORMAT_BPP (format) == 128)
 	return_val_if_fail(!(rowstride % 4), FALSE);
 
+    if (PIXMAN_FORMAT_BPP (format) == 64)
+	return_val_if_fail(!(rowstride % 2), FALSE);
+
     if (!bits && width && height)
     {
 	int rowstride_bytes;
