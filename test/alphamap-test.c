@@ -259,7 +259,7 @@ run_test (int s, int d, int sa, int da, int soff, int doff)
 		printf ("\nWrong alpha value at (%d, %d). Should be %g; got %g. Source was %g, original dest was %g\n",
 			k, j, refa, da, sa, oda);
 
-		printf ("src: %s, alpha: %s, origin %d %d\ndst: %s, alpha: %s, origin: %d %d\n\n",
+		printf ("src: %s, alpha: %s, origin: %d %d\ndst: %s, alpha: %s, origin: %d %d\n\n",
 			format_name (sf),
 			format_name (saf),
 			soff, soff,
