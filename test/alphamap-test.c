@@ -155,21 +155,41 @@ get_red (pixman_image_t *image, int x, int y, int orig_x, int orig_y)
     return r;
 }
 
+/* This is effectively the size of the significand */
+static int
+precision_bits_for_float_type(pixman_format_code_t x)
+{
+    if (x == PIXMAN_rgba_float)
+        return 24;
+    assert(0);
+}
+
 static float get_alpha_err(pixman_format_code_t sf, pixman_format_code_t saf,
 			   pixman_format_code_t df, pixman_format_code_t daf)
 {
 	pixman_format_code_t s = saf != PIXMAN_null ? saf : sf;
 	pixman_format_code_t d = daf != PIXMAN_null ? daf : df;
+        int sa_bits, da_bits;
+
+        if (PIXMAN_FORMAT_TYPE(s) == PIXMAN_TYPE_RGBA_FLOAT)
+            sa_bits = precision_bits_for_float_type(s);
+        else
+            sa_bits = PIXMAN_FORMAT_A(s);
+
+        if (PIXMAN_FORMAT_TYPE(d) == PIXMAN_TYPE_RGBA_FLOAT)
+            da_bits = precision_bits_for_float_type(d);
+        else
+            da_bits = PIXMAN_FORMAT_A(d);
 
 	/* There are cases where we go through the 8 bit compositing
 	 * path even with 10bpc and higher formats.
 	 */
-	if (PIXMAN_FORMAT_A(s) == PIXMAN_FORMAT_A(d))
+	if (sa_bits == da_bits)
 		return 1.f / 255.f;
-	else if (PIXMAN_FORMAT_A(s) > PIXMAN_FORMAT_A(d))
-		return 1.f / ((1 << PIXMAN_FORMAT_A(d)) - 1);
+	else if (sa_bits > da_bits)
+		return 1.f / ((1 << da_bits) - 1);
 	else
-		return 1.f / ((1 << PIXMAN_FORMAT_A(s)) - 1);
+		return 1.f / ((1 << sa_bits) - 1);
 }
 
 static int
