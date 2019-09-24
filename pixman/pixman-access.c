@@ -690,6 +690,29 @@ fetch_scanline_rgbaf_float (bits_image_t   *image,
     }
 }
 
+#ifdef HAVE_FLOAT16
+static void
+fetch_scanline_rgbaf_float16 (bits_image_t   *image,
+                              int             x,
+                              int             y,
+                              int             width,
+                              uint32_t *      b,
+                              const uint32_t *mask)
+{
+    const _Float16 *bits = (_Float16 *)image->bits + y * (image->rowstride*2);
+    const _Float16 *pixel = bits + x * 4;
+    argb_t *buffer = (argb_t *)b;
+
+    for (; width--; buffer++) {
+        buffer->r = *pixel++;
+        buffer->g = *pixel++;
+        buffer->b = *pixel++;
+        buffer->a = *pixel++;
+    }
+}
+
+#else
+
 static float
 convert_half_to_float(uint16_t f16)
 {
@@ -737,6 +760,7 @@ fetch_scanline_rgbaf_float16 (bits_image_t   *image,
         buffer->a = convert_half_to_float(*pixel++);
     }
 }
+#endif
 #endif
 
 static void
@@ -935,6 +959,23 @@ fetch_pixel_rgbaf_float (bits_image_t *image,
     return argb;
 }
 
+#ifdef HAVE_FLOAT16
+static argb_t
+fetch_pixel_rgbaf_float16 (bits_image_t *image,
+			   int           offset,
+			   int           line)
+{
+    _Float16 *bits = (_Float16 *)image->bits + line * (image->rowstride*2);
+    argb_t argb;
+
+    argb.r = bits[offset * 4];
+    argb.g = bits[offset * 4 + 1];
+    argb.b = bits[offset * 4 + 2];
+    argb.a = bits[offset * 4 + 3];
+
+    return argb;
+}
+#else
 static argb_t
 fetch_pixel_rgbaf_float16 (bits_image_t *image,
 			   int           offset,
@@ -950,7 +991,7 @@ fetch_pixel_rgbaf_float16 (bits_image_t *image,
 
     return argb;
 }
-
+#endif
 #endif
 
 static argb_t
@@ -1148,6 +1189,28 @@ store_scanline_rgbf_float (bits_image_t *  image,
     }
 }
 
+#ifdef HAVE_FLOAT16
+static void
+store_scanline_rgbaf_float16 (bits_image_t *  image,
+                              int             x,
+                              int             y,
+                              int             width,
+                              const uint32_t *v)
+{
+    _Float16 *bits = (_Float16 *)image->bits + (image->rowstride*2) * y + 4 * x;
+    const argb_t *values = (argb_t *)v;
+
+    for (; width; width--, values++)
+    {
+        *bits++ = values->r;
+        *bits++ = values->g;
+        *bits++ = values->b;
+        *bits++ = values->a;
+    }
+}
+
+#else
+
 static uint16_t
 convert_float_to_half(float f)
 {
@@ -1224,6 +1287,7 @@ store_scanline_rgbaf_float16 (bits_image_t *  image,
         *bits++ = convert_float_to_half(values->a);
     }
 }
+#endif
 #endif
 
 static void
