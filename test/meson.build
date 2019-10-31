@@ -79,6 +79,7 @@ foreach t : tests
     ),
     timeout : 120,
     is_parallel : true,
+    should_fail : meson.get_cross_property('xfail', '').contains(t),
   )
 endforeach
 
