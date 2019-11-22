@@ -1,5 +1,5 @@
 variables:
-    DEBIAN_TAG: "2019-11-01-7"
+    DEBIAN_TAG: "2019-11-22-1"
     DEBIAN_VERSION: buster-slim
     DEBIAN_IMAGE: "$CI_REGISTRY_IMAGE/debian/$DEBIAN_VERSION:$DEBIAN_TAG"
 
