@@ -541,6 +541,10 @@ pixman_bool_t           pixman_region_intersect          (pixman_region16_t *new
 							  pixman_region16_t *reg2);
 
 PIXMAN_API
+pixman_bool_t           pixman_region_check_intersects   (pixman_region16_t *reg1,
+							  pixman_region16_t *reg2);
+
+PIXMAN_API
 pixman_bool_t           pixman_region_union              (pixman_region16_t *new_reg,
 							  pixman_region16_t *reg1,
 							  pixman_region16_t *reg2);
@@ -679,6 +683,10 @@ pixman_bool_t           pixman_region32_copy               (pixman_region32_t *d
 PIXMAN_API
 pixman_bool_t           pixman_region32_intersect          (pixman_region32_t *new_reg,
 							    pixman_region32_t *reg1,
+							    pixman_region32_t *reg2);
+
+PIXMAN_API
+pixman_bool_t           pixman_region32_check_intersects   (pixman_region32_t *reg1,
 							    pixman_region32_t *reg2);
 
 PIXMAN_API

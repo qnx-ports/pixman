@@ -1218,6 +1218,49 @@ PREFIX (_intersect) (region_type_t *     new_reg,
     return(TRUE);
 }
 
+PIXMAN_EXPORT pixman_bool_t
+PREFIX (_check_intersects) (region_type_t *        reg1,
+                            region_type_t *        reg2)
+{
+    int i, j, n_rects_reg2;
+    box_type_t *rects1;
+    box_type_t *rects2;
+
+    /* check for trivial reject */
+    if (PIXREGION_NIL (reg1) || PIXREGION_NIL (reg2) ||
+        !EXTENTCHECK (&reg1->extents, &reg2->extents))
+        return FALSE;
+
+    if (!reg1->data && !reg2->data)
+        return TRUE;
+
+    if (!reg2->data && SUBSUMES (&reg2->extents, &reg1->extents))
+        return TRUE;
+
+    if (!reg1->data && SUBSUMES (&reg1->extents, &reg2->extents))
+        return TRUE;
+
+    if (reg1 == reg2)
+        return TRUE;
+
+    n_rects_reg2 = PIXREGION_NUMRECTS (reg2);
+    rects1 = PIXREGION_RECTS (reg1);
+    rects2 = PIXREGION_RECTS (reg2);
+
+    for (i = 0; i != PIXREGION_NUMRECTS (reg1); i++)
+    {
+        box_type_t *rect1 = &rects1[i];
+
+        for (j = 0; j != n_rects_reg2; j++)
+        {
+            if (EXTENTCHECK (rect1, &rects2[j]))
+                return TRUE;
+        }
+    }
+
+    return FALSE;
+}
+
 #define MERGERECT(r)							\
     do									\
     {									\
