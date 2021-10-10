@@ -326,7 +326,7 @@ composite_test (image_t *dst,
 
     if (!pixel_checker_check (&checker, get_value (dst->image), &expected))
     {
-	char buf[40], buf2[40];
+	char buf[40], buf2[40], buf3[128];
 	int a, r, g, b;
 	uint32_t pixel;
 
@@ -359,7 +359,8 @@ composite_test (image_t *dst,
 
 	pixel_checker_split_pixel (&checker, pixel, &a, &r, &g, &b);
 
-	printf ("Got:           %5d %5d %5d %5d  [pixel: 0x%08x]\n", r, g, b, a, pixel);
+	pixel_checker_convert_pixel_to_string(&checker, pixel, buf3, sizeof buf3);
+	printf ("Got:           %5d %5d %5d %5d  [pixel: %s]\n", r, g, b, a, buf3);
 	pixel_checker_get_min (&checker, &expected, &a, &r, &g, &b);
 	printf ("Min accepted:  %5d %5d %5d %5d\n", r, g, b, a);
 	pixel_checker_get_max (&checker, &expected, &a, &r, &g, &b);

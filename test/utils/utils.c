@@ -2173,6 +2173,24 @@ pixel_checker_convert_pixel_to_color (const pixel_checker_t *checker,
     }
 }
 
+void
+pixel_checker_convert_pixel_to_string (const pixel_checker_t *checker,
+				       uint32_t pixel, char *buf, size_t len)
+{
+	pixel_checker_require_uint32_format(checker);
+
+	if (PIXMAN_FORMAT_BPP (checker->format) <= 4)
+		snprintf(buf, len, "0x%01x", pixel);
+	else if (PIXMAN_FORMAT_BPP (checker->format) <= 8)
+		snprintf(buf, len, "0x%02x", pixel);
+	else if (PIXMAN_FORMAT_BPP (checker->format) <= 16)
+		snprintf(buf, len, "0x%04x", pixel);
+	else if (PIXMAN_FORMAT_BPP (checker->format) <= 24)
+		snprintf(buf, len, "0x%06x", pixel);
+	else
+		snprintf(buf, len, "0x%08x", pixel);
+}
+
 static int32_t
 convert (double v, uint32_t width, uint32_t mask, double def)
 {

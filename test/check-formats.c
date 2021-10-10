@@ -12,6 +12,7 @@ check_op (pixman_op_t          op,
     pixman_image_t *si, *di;
     uint32_t sa, sg, da, dg;
     uint32_t s, d;
+    char buf[128];
     int retval = 0;
 
     pixel_checker_init (&src_checker, src_format);
@@ -71,9 +72,12 @@ check_op (pixman_op_t          op,
                     {
                         printf ("---- test failed ----\n");
                         printf ("operator: %-32s\n", operator_name (op));
-                        printf ("source:   %-12s pixel: %08x\n", format_name (src_format), s);
-                        printf ("dest:     %-12s pixel: %08x\n", format_name (dest_format), orig_d);
-                        printf ("got:      %-12s pixel: %08x\n", format_name (dest_format), d);
+			pixel_checker_convert_pixel_to_string(&src_checker, s, buf, sizeof buf);
+			printf ("source:   %-12s pixel: %s\n", format_name (src_format), buf);
+			pixel_checker_convert_pixel_to_string(&dest_checker, orig_d, buf, sizeof buf);
+			printf ("dest:     %-12s pixel: %s\n", format_name (dest_format), buf);
+			pixel_checker_convert_pixel_to_string(&dest_checker, d, buf, sizeof buf);
+			printf ("got:      %-12s pixel: %s\n", format_name (dest_format), buf);
 
                         retval = 1;
                     }

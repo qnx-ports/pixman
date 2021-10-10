@@ -294,6 +294,14 @@ void
 pixel_checker_convert_pixel_to_color (const pixel_checker_t *checker,
                                       uint32_t pixel, color_t *color);
 
+/* Given a pixel, produce a string representation of its bits. This can depend
+ * on the pixel format, so e.g. 32bpp formats are displayed as 0x%08x, while
+ * 16bpp formats might be displayed as 0x%04x.
+ */
+void
+pixel_checker_convert_pixel_to_string (const pixel_checker_t *checker,
+				       uint32_t pixel, char *buf, size_t len);
+
 void
 pixel_checker_get_masks (const pixel_checker_t *checker,
                          uint32_t              *am,

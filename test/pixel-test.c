@@ -2863,6 +2863,7 @@ verify (int test_no, const pixel_combination_t *combination, int size,
     color_t source_color, mask_color, dest_color, reference_color;
     pixman_bool_t have_mask = (combination->mask_format != PIXMAN_null);
     pixman_bool_t result = TRUE;
+    char buf[128];
     int i, j;
 
     /* Compute reference color */
@@ -2927,26 +2928,33 @@ verify (int test_no, const pixel_combination_t *combination, int size,
 		    printf ("   mask format:      %s\n", format_name (combination->mask_format));
 		printf ("   dest format:      %s\n", format_name (combination->dest_format));
 
-                printf (" - source ARGB:      %f  %f  %f  %f   (pixel: %8x)\n",
+		pixel_checker_convert_pixel_to_string(&src_checker, combination->src_pixel,
+						      buf, sizeof buf);
+		printf (" - source ARGB:      %f  %f  %f  %f   (pixel: %s)\n",
                         source_color.a, source_color.r, source_color.g, source_color.b,
-                        combination->src_pixel);
+			buf);
 		pixel_checker_split_pixel (&src_checker, combination->src_pixel,
 					   &a, &r, &g, &b);
                 printf ("                     %8d  %8d  %8d  %8d\n", a, r, g, b);
 
 		if (have_mask)
 		{
-		    printf (" - mask ARGB:        %f  %f  %f  %f   (pixel: %8x)\n",
+		    pixel_checker_convert_pixel_to_string(&mask_checker,
+							  combination->mask_pixel,
+							  buf, sizeof buf);
+		    printf (" - mask ARGB:        %f  %f  %f  %f   (pixel: %s)\n",
 			    mask_color.a, mask_color.r, mask_color.g, mask_color.b,
-			    combination->mask_pixel);
+			    buf);
 		    pixel_checker_split_pixel (&mask_checker, combination->mask_pixel,
 					       &a, &r, &g, &b);
 		    printf ("                     %8d  %8d  %8d  %8d\n", a, r, g, b);
 		}
 
-                printf (" - dest ARGB:        %f  %f  %f  %f   (pixel: %8x)\n",
+		pixel_checker_convert_pixel_to_string(&dest_checker, combination->dest_pixel,
+						      buf, sizeof buf);
+		printf (" - dest ARGB:        %f  %f  %f  %f   (pixel: %s)\n",
                         dest_color.a, dest_color.r, dest_color.g, dest_color.b,
-                        combination->dest_pixel);
+			buf);
 		pixel_checker_split_pixel (&dest_checker, combination->dest_pixel,
 					   &a, &r, &g, &b);
                 printf ("                     %8d  %8d  %8d  %8d\n", a, r, g, b);
@@ -2958,8 +2966,10 @@ verify (int test_no, const pixel_combination_t *combination, int size,
                 pixel_checker_get_min (&dest_checker, &reference_color, &a, &r, &g, &b);
                 printf ("   min acceptable:   %8d  %8d  %8d  %8d\n", a, r, g, b);
 
+		pixel_checker_convert_pixel_to_string(&dest_checker, computed,
+						      buf, sizeof buf);
                 pixel_checker_split_pixel (&dest_checker, computed, &a, &r, &g, &b);
-                printf ("   got:              %8d  %8d  %8d  %8d   (pixel: %8x)\n", a, r, g, b, computed);
+		printf ("   got:              %8d  %8d  %8d  %8d   (pixel: %s)\n", a, r, g, b, buf);
 
                 pixel_checker_get_max (&dest_checker, &reference_color, &a, &r, &g, &b);
                 printf ("   max acceptable:   %8d  %8d  %8d  %8d\n", a, r, g, b);
