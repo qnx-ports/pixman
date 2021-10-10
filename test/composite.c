@@ -509,6 +509,9 @@ main (int argc, char **argv)
     else
 	seed = 1;
 
+    enable_divbyzero_exceptions ();
+    enable_invalid_exceptions ();
+
 #ifdef USE_OPENMP
 #   pragma omp parallel for default(none) shared(result, argv, seed)
 #endif
