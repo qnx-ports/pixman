@@ -236,10 +236,34 @@ format_name (pixman_format_code_t format);
 const char *
 dither_name (pixman_dither_t dither);
 
+
+/* An RGBA color value in linear space. Values are expected to be in range [0,1]. */
 typedef struct
 {
     double r, g, b, a;
 } color_t;
+
+/* An unnormalized, unlinearized RGBA color, which acts as an intermediate point
+ * between color_t and the raw pixel values. This can faithfully encode any
+ * value that a Pixman image pixel can have.
+ *
+ * The intepretation of this color depends on the pixel format from which it
+ * was created.
+ *
+ * If a color channel uses floating point, then the corresponding entry here
+ * will be the same as the raw pixel value, except cast to 'double'.
+ *
+ * If a color channel has an integer type, then the value will be an integral
+ * in the list {0.0, 1.0, ... , (double)(1uLL << channel width) - 1 }. Note
+ * that sRGB formats are presented in compressed {0..255} form, not in their
+ * linear equivalent.
+ *
+ * When a channel is not present in the format, the value is 0.0.
+ */
+typedef struct
+{
+    double a, r, g, b;
+} ucolor_t;
 
 void
 do_composite (pixman_op_t op,
@@ -276,15 +300,15 @@ pixel_checker_allow_dither (pixel_checker_t *checker);
 
 void
 pixel_checker_split_pixel (const pixel_checker_t *checker, uint32_t pixel,
-			   int *a, int *r, int *g, int *b);
+			   ucolor_t *u);
 
 void
 pixel_checker_get_max (const pixel_checker_t *checker, color_t *color,
-		       int *a, int *r, int *g, int *b);
+		       ucolor_t *u);
 
 void
 pixel_checker_get_min (const pixel_checker_t *checker, color_t *color,
-		       int *a, int *r, int *g, int *b);
+		       ucolor_t *u);
 
 pixman_bool_t
 pixel_checker_check (const pixel_checker_t *checker,

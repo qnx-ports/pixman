@@ -327,7 +327,7 @@ composite_test (image_t *dst,
     if (!pixel_checker_check (&checker, get_value (dst->image), &expected))
     {
 	char buf[40], buf2[40], buf3[128];
-	int a, r, g, b;
+	ucolor_t u;
 	uint32_t pixel;
 
 	printf ("---- Test %d failed ----\n", testno);
@@ -357,14 +357,14 @@ composite_test (image_t *dst,
 
 	printf ("Expected:      %s\n", describe_color (&expected, buf));
 
-	pixel_checker_split_pixel (&checker, pixel, &a, &r, &g, &b);
+	pixel_checker_split_pixel (&checker, pixel, &u);
 
 	pixel_checker_convert_pixel_to_string(&checker, pixel, buf3, sizeof buf3);
-	printf ("Got:           %5d %5d %5d %5d  [pixel: %s]\n", r, g, b, a, buf3);
-	pixel_checker_get_min (&checker, &expected, &a, &r, &g, &b);
-	printf ("Min accepted:  %5d %5d %5d %5d\n", r, g, b, a);
-	pixel_checker_get_max (&checker, &expected, &a, &r, &g, &b);
-	printf ("Max accepted:  %5d %5d %5d %5d\n", r, g, b, a);
+	printf ("Got:           %5g %5g %5g %5g  [pixel: %s]\n", u.r, u.g, u.b, u.a, buf3);
+	pixel_checker_get_min (&checker, &expected, &u);
+	printf ("Min accepted:  %5g %5g %5g %5g\n", u.r, u.g, u.b, u.a);
+	pixel_checker_get_max (&checker, &expected, &u);
+	printf ("Max accepted:  %5g %5g %5g %5g\n", u.r, u.g, u.b, u.a);
 
 	return FALSE;
     }

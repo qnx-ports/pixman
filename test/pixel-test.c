@@ -2915,7 +2915,7 @@ verify (int test_no, const pixel_combination_t *combination, int size,
 	for (i = 0; i < size; ++i)
 	{
 	    uint32_t computed = access (dest, i, j);
-	    int32_t a, r, g, b;
+	    ucolor_t u;
 
 	    if (!pixel_checker_check (&dest_checker, computed, &reference_color))
 	    {
@@ -2934,8 +2934,8 @@ verify (int test_no, const pixel_combination_t *combination, int size,
                         source_color.a, source_color.r, source_color.g, source_color.b,
 			buf);
 		pixel_checker_split_pixel (&src_checker, combination->src_pixel,
-					   &a, &r, &g, &b);
-                printf ("                     %8d  %8d  %8d  %8d\n", a, r, g, b);
+					   &u);
+		printf ("                     %8g  %8g  %8g  %8g\n", u.a, u.r, u.g, u.b);
 
 		if (have_mask)
 		{
@@ -2946,8 +2946,8 @@ verify (int test_no, const pixel_combination_t *combination, int size,
 			    mask_color.a, mask_color.r, mask_color.g, mask_color.b,
 			    buf);
 		    pixel_checker_split_pixel (&mask_checker, combination->mask_pixel,
-					       &a, &r, &g, &b);
-		    printf ("                     %8d  %8d  %8d  %8d\n", a, r, g, b);
+					       &u);
+		    printf ("                     %8g  %8g  %8g  %8g\n", u.a, u.r, u.g, u.b);
 		}
 
 		pixel_checker_convert_pixel_to_string(&dest_checker, combination->dest_pixel,
@@ -2956,23 +2956,23 @@ verify (int test_no, const pixel_combination_t *combination, int size,
                         dest_color.a, dest_color.r, dest_color.g, dest_color.b,
 			buf);
 		pixel_checker_split_pixel (&dest_checker, combination->dest_pixel,
-					   &a, &r, &g, &b);
-                printf ("                     %8d  %8d  %8d  %8d\n", a, r, g, b);
+					   &u);
+		printf ("                     %8g  %8g  %8g  %8g\n", u.a, u.r, u.g, u.b);
 
-                pixel_checker_split_pixel (&dest_checker, computed, &a, &r, &g, &b);
+		pixel_checker_split_pixel (&dest_checker, computed, &u);
                 printf (" - expected ARGB:    %f  %f  %f  %f\n",
                         reference_color.a, reference_color.r, reference_color.g, reference_color.b);
 
-                pixel_checker_get_min (&dest_checker, &reference_color, &a, &r, &g, &b);
-                printf ("   min acceptable:   %8d  %8d  %8d  %8d\n", a, r, g, b);
+		pixel_checker_get_min (&dest_checker, &reference_color, &u);
+		printf ("   min acceptable:   %8g  %8g  %8g  %8g\n", u.a, u.r, u.g, u.b);
 
 		pixel_checker_convert_pixel_to_string(&dest_checker, computed,
 						      buf, sizeof buf);
-                pixel_checker_split_pixel (&dest_checker, computed, &a, &r, &g, &b);
-		printf ("   got:              %8d  %8d  %8d  %8d   (pixel: %s)\n", a, r, g, b, buf);
+		pixel_checker_split_pixel (&dest_checker, computed, &u);
+		printf ("   got:              %8g  %8g  %8g  %8g   (pixel: %s)\n", u.a, u.r, u.g, u.b, buf);
 
-                pixel_checker_get_max (&dest_checker, &reference_color, &a, &r, &g, &b);
-                printf ("   max acceptable:   %8d  %8d  %8d  %8d\n", a, r, g, b);
+		pixel_checker_get_max (&dest_checker, &reference_color, &u);
+		printf ("   max acceptable:   %8g  %8g  %8g  %8g\n", u.a, u.r, u.g, u.b);
 
 		result = FALSE;
 		goto done;

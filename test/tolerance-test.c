@@ -225,7 +225,7 @@ verify (int test_no,
 
             if (!pixel_checker_check (&dest_checker, dest_pixel, &result))
             {
-                int a, r, g, b;
+		ucolor_t u;
 
                 printf ("--------- Test 0x%x failed ---------\n", test_no);
                 
@@ -259,15 +259,15 @@ verify (int test_no,
                 printf ("   expected ARGB:    %f  %f  %f  %f\n",
                         result.a, result.r, result.g, result.b);
 
-                pixel_checker_get_min (&dest_checker, &result, &a, &r, &g, &b);
-                printf ("   min acceptable:   %8d  %8d  %8d  %8d\n", a, r, g, b);
+		pixel_checker_get_min (&dest_checker, &result, &u);
+		printf ("   min acceptable:   %8g  %8g  %8g  %8g\n", u.a, u.r, u.g, u.b);
 
 		pixel_checker_convert_pixel_to_string(&dest_checker, dest_pixel, buf, sizeof buf);
-                pixel_checker_split_pixel (&dest_checker, dest_pixel, &a, &r, &g, &b);
-		printf ("   got:              %8d  %8d  %8d  %8d   (pixel: %s)\n", a, r, g, b, buf);
+		pixel_checker_split_pixel (&dest_checker, dest_pixel, &u);
+		printf ("   got:              %8g  %8g  %8g  %8g   (pixel: %s)\n", u.a, u.r, u.g, u.b, buf);
                 
-                pixel_checker_get_max (&dest_checker, &result, &a, &r, &g, &b);
-                printf ("   max acceptable:   %8d  %8d  %8d  %8d\n", a, r, g, b);
+		pixel_checker_get_max (&dest_checker, &result, &u);
+		printf ("   max acceptable:   %8g  %8g  %8g  %8g\n", u.a, u.r, u.g, u.b);
 		printf ("\n");
 		printf ("    { %s,\n", operator_name (op));
 		pixel_checker_convert_pixel_to_string(&src_checker, src_pixel, buf, sizeof buf);

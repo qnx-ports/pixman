@@ -2106,14 +2106,14 @@ pixel_checker_require_uint32_format (const pixel_checker_t *checker)
 
 void
 pixel_checker_split_pixel (const pixel_checker_t *checker, uint32_t pixel,
-			   int *a, int *r, int *g, int *b)
+			   ucolor_t *u)
 {
     pixel_checker_require_uint32_format(checker);
 
-    *a = (pixel >> checker->as) & checker->am;
-    *r = (pixel >> checker->rs) & checker->rm;
-    *g = (pixel >> checker->gs) & checker->gm;
-    *b = (pixel >> checker->bs) & checker->bm;
+    u->a = (double)((pixel >> checker->as) & checker->am);
+    u->r = (double)((pixel >> checker->rs) & checker->rm);
+    u->g = (double)((pixel >> checker->gs) & checker->gm);
+    u->b = (double)((pixel >> checker->bs) & checker->bm);
 }
 
 void
@@ -2139,31 +2139,31 @@ void
 pixel_checker_convert_pixel_to_color (const pixel_checker_t *checker,
                                       uint32_t pixel, color_t *color)
 {
-    int a, r, g, b;
+    ucolor_t u;
 
     pixel_checker_require_uint32_format(checker);
 
-    pixel_checker_split_pixel (checker, pixel, &a, &r, &g, &b);
+    pixel_checker_split_pixel (checker, pixel, &u);
 
     if (checker->am == 0)
         color->a = 1.0;
     else
-	color->a = a / (double)(checker->am);
+	color->a = u.a / (double)(checker->am);
 
     if (checker->rm == 0)
         color->r = 0.0;
     else
-	color->r = r / (double)(checker->rm);
+	color->r = u.r / (double)(checker->rm);
 
     if (checker->gm == 0)
         color->g = 0.0;
     else
-	color->g = g / (double)(checker->gm);
+	color->g = u.g / (double)(checker->gm);
 
     if (checker->bm == 0)
         color->b = 0.0;
     else
-	color->b = b / (double)(checker->bm);
+	color->b = u.b / (double)(checker->bm);
 
     if (PIXMAN_FORMAT_TYPE (checker->format) == PIXMAN_TYPE_ARGB_SRGB)
     {
@@ -2208,7 +2208,7 @@ convert (double v, uint32_t width, uint32_t mask, double def)
 static void
 get_limits (const pixel_checker_t *checker, double sign,
 	    color_t *color,
-	    int *ao, int *ro, int *go, int *bo)
+	    ucolor_t *u)
 {
     color_t tmp;
 
@@ -2222,53 +2222,52 @@ get_limits (const pixel_checker_t *checker, double sign,
 	color = &tmp;
     }
     
-    *ao = convert (color->a + sign * checker->ad,
-		   checker->aw, checker->am, 1.0);
-    *ro = convert (color->r + sign * checker->rd,
-		   checker->rw, checker->rm, 0.0);
-    *go = convert (color->g + sign * checker->gd,
-		   checker->gw, checker->gm, 0.0);
-    *bo = convert (color->b + sign * checker->bd,
-		   checker->bw, checker->bm, 0.0);
+    u->a = (double)convert (color->a + sign * checker->ad,
+			    checker->aw, checker->am, 1.0);
+    u->r = (double)convert (color->r + sign * checker->rd,
+			    checker->rw, checker->rm, 0.0);
+    u->g = (double)convert (color->g + sign * checker->gd,
+			    checker->gw, checker->gm, 0.0);
+    u->b = (double)convert (color->b + sign * checker->bd,
+			    checker->bw, checker->bm, 0.0);
 }
 
 void
 pixel_checker_get_max (const pixel_checker_t *checker, color_t *color,
-		       int *am, int *rm, int *gm, int *bm)
+		       ucolor_t *u)
 {
     pixel_checker_require_uint32_format(checker);
 
-    get_limits (checker, 1, color, am, rm, gm, bm);
+    get_limits (checker, 1, color, u);
 }
 
 void
 pixel_checker_get_min (const pixel_checker_t *checker, color_t *color,
-		       int *am, int *rm, int *gm, int *bm)
+		       ucolor_t *u)
 {
     pixel_checker_require_uint32_format(checker);
 
-    get_limits (checker, - 1, color, am, rm, gm, bm);
+    get_limits (checker, - 1, color, u);
 }
 
 pixman_bool_t
 pixel_checker_check (const pixel_checker_t *checker, uint32_t pixel,
 		     color_t *color)
 {
-    int32_t a_lo, a_hi, r_lo, r_hi, g_lo, g_hi, b_lo, b_hi;
-    int32_t ai, ri, gi, bi;
+    ucolor_t lo, hi, u;
     pixman_bool_t result;
 
     pixel_checker_require_uint32_format(checker);
 
-    pixel_checker_get_min (checker, color, &a_lo, &r_lo, &g_lo, &b_lo);
-    pixel_checker_get_max (checker, color, &a_hi, &r_hi, &g_hi, &b_hi);
-    pixel_checker_split_pixel (checker, pixel, &ai, &ri, &gi, &bi);
+    pixel_checker_get_min (checker, color, &lo);
+    pixel_checker_get_max (checker, color, &hi);
+    pixel_checker_split_pixel (checker, pixel, &u);
 
     result =
-	a_lo <= ai && ai <= a_hi	&&
-	r_lo <= ri && ri <= r_hi	&&
-	g_lo <= gi && gi <= g_hi	&&
-	b_lo <= bi && bi <= b_hi;
+	lo.a <= u.a && u.a <= hi.a &&
+	lo.r <= u.r && u.r <= hi.r &&
+	lo.g <= u.g && u.g <= hi.g &&
+	lo.b <= u.b && u.b <= hi.b;
 
     return result;
 }
