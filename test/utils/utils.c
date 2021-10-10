@@ -2070,10 +2070,10 @@ pixel_checker_init (pixel_checker_t *checker, pixman_format_code_t format)
 	break;
     }
 
-    checker->am = ((1U << PIXMAN_FORMAT_A (format)) - 1) << checker->as;
-    checker->rm = ((1U << PIXMAN_FORMAT_R (format)) - 1) << checker->rs;
-    checker->gm = ((1U << PIXMAN_FORMAT_G (format)) - 1) << checker->gs;
-    checker->bm = ((1U << PIXMAN_FORMAT_B (format)) - 1) << checker->bs;
+    checker->am = ((1U << PIXMAN_FORMAT_A (format)) - 1);
+    checker->rm = ((1U << PIXMAN_FORMAT_R (format)) - 1);
+    checker->gm = ((1U << PIXMAN_FORMAT_G (format)) - 1);
+    checker->bm = ((1U << PIXMAN_FORMAT_B (format)) - 1);
 
     checker->aw = PIXMAN_FORMAT_A (format);
     checker->rw = PIXMAN_FORMAT_R (format);
@@ -2110,10 +2110,10 @@ pixel_checker_split_pixel (const pixel_checker_t *checker, uint32_t pixel,
 {
     pixel_checker_require_uint32_format(checker);
 
-    *a = (pixel & checker->am) >> checker->as;
-    *r = (pixel & checker->rm) >> checker->rs;
-    *g = (pixel & checker->gm) >> checker->gs;
-    *b = (pixel & checker->bm) >> checker->bs;
+    *a = (pixel >> checker->as) & checker->am;
+    *r = (pixel >> checker->rs) & checker->rm;
+    *g = (pixel >> checker->gs) & checker->gm;
+    *b = (pixel >> checker->bs) & checker->bm;
 }
 
 void
@@ -2126,13 +2126,13 @@ pixel_checker_get_masks (const pixel_checker_t *checker,
     pixel_checker_require_uint32_format(checker);
 
     if (am)
-        *am = checker->am;
+	*am = checker->am << checker->as;
     if (rm)
-        *rm = checker->rm;
+	*rm = checker->rm << checker->rs;
     if (gm)
-        *gm = checker->gm;
+	*gm = checker->gm << checker->gs;
     if (bm)
-        *bm = checker->bm;
+	*bm = checker->bm << checker->bs;
 }
 
 void
@@ -2148,22 +2148,22 @@ pixel_checker_convert_pixel_to_color (const pixel_checker_t *checker,
     if (checker->am == 0)
         color->a = 1.0;
     else
-        color->a = a / (double)(checker->am >> checker->as);
+	color->a = a / (double)(checker->am);
 
     if (checker->rm == 0)
         color->r = 0.0;
     else
-        color->r = r / (double)(checker->rm >> checker->rs);
+	color->r = r / (double)(checker->rm);
 
     if (checker->gm == 0)
         color->g = 0.0;
     else
-        color->g = g / (double)(checker->gm >> checker->gs);
+	color->g = g / (double)(checker->gm);
 
     if (checker->bm == 0)
         color->b = 0.0;
     else
-        color->b = b / (double)(checker->bm >> checker->bs);
+	color->b = b / (double)(checker->bm);
 
     if (PIXMAN_FORMAT_TYPE (checker->format) == PIXMAN_TYPE_ARGB_SRGB)
     {
@@ -2174,14 +2174,14 @@ pixel_checker_convert_pixel_to_color (const pixel_checker_t *checker,
 }
 
 static int32_t
-convert (double v, uint32_t width, uint32_t mask, uint32_t shift, double def)
+convert (double v, uint32_t width, uint32_t mask, double def)
 {
     int32_t r;
 
     if (!mask)
 	v = def;
 
-    r = (v * ((mask >> shift) + 1));
+    r = (v * (mask + 1));
     r -= r >> width;
 
     return r;
@@ -2205,13 +2205,13 @@ get_limits (const pixel_checker_t *checker, double sign,
     }
     
     *ao = convert (color->a + sign * checker->ad,
-		   checker->aw, checker->am, checker->as, 1.0);
+		   checker->aw, checker->am, 1.0);
     *ro = convert (color->r + sign * checker->rd,
-		   checker->rw, checker->rm, checker->rs, 0.0);
+		   checker->rw, checker->rm, 0.0);
     *go = convert (color->g + sign * checker->gd,
-		   checker->gw, checker->gm, checker->gs, 0.0);
+		   checker->gw, checker->gm, 0.0);
     *bo = convert (color->b + sign * checker->bd,
-		   checker->bw, checker->bm, checker->bs, 0.0);
+		   checker->bw, checker->bm, 0.0);
 }
 
 void

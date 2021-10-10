@@ -255,9 +255,16 @@ round_color (pixman_format_code_t format, color_t *color);
 typedef struct
 {
     pixman_format_code_t format;
+    /* UNSHIFTED masks for each channel.
+     * Example: a2r10g10b10 has 0x3,0x3f,0x3f,0x3f */
     uint32_t am, rm, gm, bm;
+    /* Shift values for each channel.
+     * Example: a2r10g10b10 has 30, 20, 10, 0*/
     uint32_t as, rs, gs, bs;
+    /* Bit widths of each channel.
+     * Example: a2r10g10b10 has 2,10,10,10*/
     uint32_t aw, rw, gw, bw;
+    /* Allowed deviations in each channel */
     float ad, rd, gd, bd;
 } pixel_checker_t;
 
