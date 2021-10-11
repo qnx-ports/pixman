@@ -76,6 +76,11 @@ static const int sizes[] =
 
 static const pixman_format_code_t formats[] =
 {
+    /* 128bpp formats */
+    PIXMAN_rgba_float,
+    /* 96bpp formats */
+    PIXMAN_rgb_float,
+
     /* 32 bpp formats */
     PIXMAN_a8r8g8b8,
     PIXMAN_x8r8g8b8,
