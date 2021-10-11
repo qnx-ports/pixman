@@ -44,17 +44,31 @@ check_op (pixman_op_t          op,
                 {
                     color_t src_color, dest_color, result_color;
                     uint32_t orig_d;
+		    union {
+			uint32_t v;
+			uint8_t b[4];
+		    } s_px, d_px, orig_d_px;
 
                     s = sa | sg;
                     d = da | dg;
 
                     orig_d = d;
 
-		    pixel_checker_convert_pixel_to_color (&src_checker, s, &src_color);
-		    pixel_checker_convert_pixel_to_color (&dest_checker, d, &dest_color);
+		    /* Store uint32_t constants, shifted so that the pixel data starts at
+		     * the first byte in the constants */
+		    s_px.v = s;
+		    d_px.v = d;
+		    orig_d_px.v = orig_d;
+#ifdef WORDS_BIGENDIAN
+		    s_px.v <<= (sizeof(s_px.v) - PIXMAN_FORMAT_BPP (src_format));
+		    d_px.v <<= (sizeof(d_px.v) - PIXMAN_FORMAT_BPP (dest_format));
+		    orig_d_px.v <<= (sizeof(orig_d_px.v) - PIXMAN_FORMAT_BPP (dest_format));
+#endif
+
+		    pixel_checker_convert_pixel_to_color (&src_checker, s_px.b, &src_color);
+		    pixel_checker_convert_pixel_to_color (&dest_checker, d_px.b, &dest_color);
 
 		    do_composite (op, &src_color, NULL, &dest_color, &result_color, FALSE);
-
 
 		    if (!is_little_endian())
                     {
@@ -68,15 +82,20 @@ check_op (pixman_op_t          op,
 		    if (!is_little_endian())
                         d >>= (32 - PIXMAN_FORMAT_BPP (dest_format));
 
-                    if (!pixel_checker_check (&dest_checker, d, &result_color))
+		    d_px.v = d;
+#ifdef WORDS_BIGENDIAN
+		    d_px.v <<= (sizeof(d_px.v) - PIXMAN_FORMAT_BPP (dest_format));
+#endif
+
+		    if (!pixel_checker_check (&dest_checker, d_px.b, &result_color))
                     {
                         printf ("---- test failed ----\n");
                         printf ("operator: %-32s\n", operator_name (op));
-			pixel_checker_convert_pixel_to_string(&src_checker, s, buf, sizeof buf);
+			pixel_checker_convert_pixel_to_string(&src_checker, s_px.b, buf, sizeof buf);
 			printf ("source:   %-12s pixel: %s\n", format_name (src_format), buf);
-			pixel_checker_convert_pixel_to_string(&dest_checker, orig_d, buf, sizeof buf);
+			pixel_checker_convert_pixel_to_string(&dest_checker, orig_d_px.b, buf, sizeof buf);
 			printf ("dest:     %-12s pixel: %s\n", format_name (dest_format), buf);
-			pixel_checker_convert_pixel_to_string(&dest_checker, d, buf, sizeof buf);
+			pixel_checker_convert_pixel_to_string(&dest_checker, d_px.b, buf, sizeof buf);
 			printf ("got:      %-12s pixel: %s\n", format_name (dest_format), buf);
 
                         retval = 1;

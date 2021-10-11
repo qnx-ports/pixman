@@ -182,19 +182,10 @@ static const pixman_op_t operators[] =
     PIXMAN_OP_CONJOINT_XOR,
 };
 
-static uint32_t
+static const uint8_t *
 get_value (pixman_image_t *image)
 {
-    uint32_t value = *(uint32_t *)pixman_image_get_data (image);
-
-#ifdef WORDS_BIGENDIAN
-    {
-	pixman_format_code_t format = pixman_image_get_format (image);
-	value >>= 8 * sizeof(value) - PIXMAN_FORMAT_BPP (format);
-    }
-#endif
-
-    return value;
+    return (const uint8_t *)pixman_image_get_data (image);
 }
 
 static char *
@@ -328,7 +319,7 @@ composite_test (image_t *dst,
     {
 	char buf[40], buf2[40], buf3[128];
 	ucolor_t u;
-	uint32_t pixel;
+	const uint8_t *pixel;
 
 	printf ("---- Test %d failed ----\n", testno);
 	printf ("Operator:      %s %s\n",

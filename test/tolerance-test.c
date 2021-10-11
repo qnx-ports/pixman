@@ -126,11 +126,11 @@ create_image (pixman_image_t **clone)
 }
 
 static pixman_bool_t
-access (pixman_image_t *image, int x, int y, uint32_t *pixel)
+access (pixman_image_t *image, int x, int y, const uint8_t **pixel)
 {
     int bytes_per_pixel;
     int stride;
-    uint8_t *location;
+    const uint8_t *location;
 
     if (x < 0 || x >= image->bits.width || y < 0 || y >= image->bits.height)
         return FALSE;
@@ -138,16 +138,8 @@ access (pixman_image_t *image, int x, int y, uint32_t *pixel)
     bytes_per_pixel = PIXMAN_FORMAT_BPP (image->bits.format) / 8;
     stride = image->bits.rowstride * 4;
     
-    location = (uint8_t *)image->bits.bits + y * stride + x * bytes_per_pixel;
-
-    if (bytes_per_pixel == 4)
-        *pixel = *(uint32_t *)location;
-    else if (bytes_per_pixel == 2)
-        *pixel = *(uint16_t *)location;
-    else if (bytes_per_pixel == 1)
-        *pixel = *(uint8_t *)location;
-    else
-	assert (0);
+    location = (const uint8_t *)image->bits.bits + y * stride + x * bytes_per_pixel;
+    *pixel = location;
 
     return TRUE;
 }
@@ -157,7 +149,7 @@ get_color (pixel_checker_t *checker,
 	   pixman_image_t *image,
 	   int x, int y,
 	   color_t *color,
-	   uint32_t *pixel)
+	   const uint8_t **pixel)
 {
     if (!access (image, x, y, pixel))
     {
@@ -202,8 +194,8 @@ verify (int test_no,
     {
         for (i = x; i < x + width; ++i)
         {
-            color_t src_color, mask_color, orig_dest_color, result;
-            uint32_t dest_pixel, orig_dest_pixel, src_pixel, mask_pixel;
+	    color_t src_color, mask_color, orig_dest_color, result;
+	    const uint8_t *dest_pixel, *orig_dest_pixel, *src_pixel, *mask_pixel;
 
             access (dest, i, j, &dest_pixel);
 

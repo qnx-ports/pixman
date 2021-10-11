@@ -2105,15 +2105,22 @@ pixel_checker_require_uint32_format (const pixel_checker_t *checker)
 }
 
 void
-pixel_checker_split_pixel (const pixel_checker_t *checker, uint32_t pixel,
+pixel_checker_split_pixel (const pixel_checker_t *checker, const uint8_t *pixel,
 			   ucolor_t *u)
 {
+    uint32_t value;
+
     pixel_checker_require_uint32_format(checker);
 
-    u->a = (double)((pixel >> checker->as) & checker->am);
-    u->r = (double)((pixel >> checker->rs) & checker->rm);
-    u->g = (double)((pixel >> checker->gs) & checker->gm);
-    u->b = (double)((pixel >> checker->bs) & checker->bm);
+    value = *(uint32_t *)pixel;
+#ifdef WORDS_BIGENDIAN
+    value >>= 8 * sizeof(value) - PIXMAN_FORMAT_BPP (checker->format);
+#endif
+
+    u->a = (double)((value >> checker->as) & checker->am);
+    u->r = (double)((value >> checker->rs) & checker->rm);
+    u->g = (double)((value >> checker->gs) & checker->gm);
+    u->b = (double)((value >> checker->bs) & checker->bm);
 }
 
 void
@@ -2137,11 +2144,9 @@ pixel_checker_get_masks (const pixel_checker_t *checker,
 
 void
 pixel_checker_convert_pixel_to_color (const pixel_checker_t *checker,
-                                      uint32_t pixel, color_t *color)
+				      const uint8_t *pixel, color_t *color)
 {
     ucolor_t u;
-
-    pixel_checker_require_uint32_format(checker);
 
     pixel_checker_split_pixel (checker, pixel, &u);
 
@@ -2175,20 +2180,27 @@ pixel_checker_convert_pixel_to_color (const pixel_checker_t *checker,
 
 void
 pixel_checker_convert_pixel_to_string (const pixel_checker_t *checker,
-				       uint32_t pixel, char *buf, size_t len)
+				       const uint8_t *pixel, char *buf, size_t len)
 {
+	uint32_t value;
+
 	pixel_checker_require_uint32_format(checker);
 
+	value = *(uint32_t *)pixel;
+#ifdef WORDS_BIGENDIAN
+	value >>= 8 * sizeof(value) - PIXMAN_FORMAT_BPP (checker->format);
+#endif
+
 	if (PIXMAN_FORMAT_BPP (checker->format) <= 4)
-		snprintf(buf, len, "0x%01x", pixel);
+		snprintf(buf, len, "0x%01x", value);
 	else if (PIXMAN_FORMAT_BPP (checker->format) <= 8)
-		snprintf(buf, len, "0x%02x", pixel);
+		snprintf(buf, len, "0x%02x", value);
 	else if (PIXMAN_FORMAT_BPP (checker->format) <= 16)
-		snprintf(buf, len, "0x%04x", pixel);
+		snprintf(buf, len, "0x%04x", value);
 	else if (PIXMAN_FORMAT_BPP (checker->format) <= 24)
-		snprintf(buf, len, "0x%06x", pixel);
+		snprintf(buf, len, "0x%06x", value);
 	else
-		snprintf(buf, len, "0x%08x", pixel);
+		snprintf(buf, len, "0x%08x", value);
 }
 
 static int32_t
@@ -2236,8 +2248,6 @@ void
 pixel_checker_get_max (const pixel_checker_t *checker, color_t *color,
 		       ucolor_t *u)
 {
-    pixel_checker_require_uint32_format(checker);
-
     get_limits (checker, 1, color, u);
 }
 
@@ -2245,19 +2255,15 @@ void
 pixel_checker_get_min (const pixel_checker_t *checker, color_t *color,
 		       ucolor_t *u)
 {
-    pixel_checker_require_uint32_format(checker);
-
     get_limits (checker, - 1, color, u);
 }
 
 pixman_bool_t
-pixel_checker_check (const pixel_checker_t *checker, uint32_t pixel,
+pixel_checker_check (const pixel_checker_t *checker, const uint8_t *pixel,
 		     color_t *color)
 {
     ucolor_t lo, hi, u;
     pixman_bool_t result;
-
-    pixel_checker_require_uint32_format(checker);
 
     pixel_checker_get_min (checker, color, &lo);
     pixel_checker_get_max (checker, color, &hi);

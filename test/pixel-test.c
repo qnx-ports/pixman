@@ -2826,13 +2826,13 @@ fill (pixman_image_t *image, uint32_t pixel)
     }
 }
 
-static uint32_t
+static const uint8_t *
 access (pixman_image_t *image, int x, int y)
 {
     int bytes_per_pixel;
     int stride;
     uint32_t result;
-    uint8_t *location;
+    const uint8_t *location;
 
     if (x < 0 || x >= image->bits.width || y < 0 || y >= image->bits.height)
         return 0;
@@ -2840,18 +2840,8 @@ access (pixman_image_t *image, int x, int y)
     bytes_per_pixel = PIXMAN_FORMAT_BPP (image->bits.format) / 8;
     stride = image->bits.rowstride * 4;
 
-    location = (uint8_t *)image->bits.bits + y * stride + x * bytes_per_pixel;
-
-    if (bytes_per_pixel == 4)
-        result = *(uint32_t *)location;
-    else if (bytes_per_pixel == 2)
-        result = *(uint16_t *)location;
-    else if (bytes_per_pixel == 1)
-        result = *(uint8_t *)location;
-    else
-	assert (0);
-
-    return result;
+    location = (const uint8_t *)image->bits.bits + y * stride + x * bytes_per_pixel;
+    return location;
 }
 
 static pixman_bool_t
@@ -2865,6 +2855,21 @@ verify (int test_no, const pixel_combination_t *combination, int size,
     pixman_bool_t result = TRUE;
     char buf[128];
     int i, j;
+    union {
+	uint32_t v;
+	uint8_t b[4];
+    } src_px, mask_px, dest_px;
+
+    /* Store uint32_t constants, shifted so that the pixel data starts at
+     * the first byte in the constants */
+    src_px.v = combination->src_pixel;
+    mask_px.v = combination->mask_pixel;
+    dest_px.v = combination->dest_pixel;
+#ifdef WORDS_BIGENDIAN
+    src_px.v <<= (sizeof(src_px.v) - PIXMAN_FORMAT_BPP (combination->src_format));
+    mask_px.v <<= (sizeof(mask_px.v) - PIXMAN_FORMAT_BPP (combination->mask_format));
+    dest_px.v <<= (sizeof(dest_px.v) - PIXMAN_FORMAT_BPP (combination->dest_format));
+#endif
 
     /* Compute reference color */
     pixel_checker_init (&src_checker, combination->src_format);
@@ -2873,14 +2878,14 @@ verify (int test_no, const pixel_combination_t *combination, int size,
     pixel_checker_init (&dest_checker, combination->dest_format);
 
     pixel_checker_convert_pixel_to_color (
-	&src_checker, combination->src_pixel, &source_color);
+	&src_checker, src_px.b, &source_color);
     if (combination->mask_format != PIXMAN_null)
     {
 	pixel_checker_convert_pixel_to_color (
-	    &mask_checker, combination->mask_pixel, &mask_color);
+	    &mask_checker, mask_px.b, &mask_color);
     }
     pixel_checker_convert_pixel_to_color (
-	&dest_checker, combination->dest_pixel, &dest_color);
+	&dest_checker, dest_px.b, &dest_color);
 
     do_composite (combination->op,
 		  &source_color,
@@ -2914,7 +2919,7 @@ verify (int test_no, const pixel_combination_t *combination, int size,
     {
 	for (i = 0; i < size; ++i)
 	{
-	    uint32_t computed = access (dest, i, j);
+	    const uint8_t *computed = access (dest, i, j);
 	    ucolor_t u;
 
 	    if (!pixel_checker_check (&dest_checker, computed, &reference_color))
@@ -2928,35 +2933,31 @@ verify (int test_no, const pixel_combination_t *combination, int size,
 		    printf ("   mask format:      %s\n", format_name (combination->mask_format));
 		printf ("   dest format:      %s\n", format_name (combination->dest_format));
 
-		pixel_checker_convert_pixel_to_string(&src_checker, combination->src_pixel,
+		pixel_checker_convert_pixel_to_string(&src_checker, src_px.b,
 						      buf, sizeof buf);
 		printf (" - source ARGB:      %f  %f  %f  %f   (pixel: %s)\n",
                         source_color.a, source_color.r, source_color.g, source_color.b,
 			buf);
-		pixel_checker_split_pixel (&src_checker, combination->src_pixel,
-					   &u);
+		pixel_checker_split_pixel (&src_checker, src_px.b, &u);
 		printf ("                     %8g  %8g  %8g  %8g\n", u.a, u.r, u.g, u.b);
 
 		if (have_mask)
 		{
-		    pixel_checker_convert_pixel_to_string(&mask_checker,
-							  combination->mask_pixel,
+		    pixel_checker_convert_pixel_to_string(&mask_checker, mask_px.b,
 							  buf, sizeof buf);
 		    printf (" - mask ARGB:        %f  %f  %f  %f   (pixel: %s)\n",
 			    mask_color.a, mask_color.r, mask_color.g, mask_color.b,
 			    buf);
-		    pixel_checker_split_pixel (&mask_checker, combination->mask_pixel,
-					       &u);
+		    pixel_checker_split_pixel (&mask_checker, mask_px.b, &u);
 		    printf ("                     %8g  %8g  %8g  %8g\n", u.a, u.r, u.g, u.b);
 		}
 
-		pixel_checker_convert_pixel_to_string(&dest_checker, combination->dest_pixel,
+		pixel_checker_convert_pixel_to_string(&dest_checker, dest_px.b,
 						      buf, sizeof buf);
 		printf (" - dest ARGB:        %f  %f  %f  %f   (pixel: %s)\n",
                         dest_color.a, dest_color.r, dest_color.g, dest_color.b,
 			buf);
-		pixel_checker_split_pixel (&dest_checker, combination->dest_pixel,
-					   &u);
+		pixel_checker_split_pixel (&dest_checker, dest_px.b, &u);
 		printf ("                     %8g  %8g  %8g  %8g\n", u.a, u.r, u.g, u.b);
 
 		pixel_checker_split_pixel (&dest_checker, computed, &u);
