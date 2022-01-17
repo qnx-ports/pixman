@@ -89,7 +89,7 @@ static const pixman_format_code_t formats[] =
     PIXMAN_x2b10g10r10,
     PIXMAN_a2r10g10b10,
     PIXMAN_a2b10g10r10,
-    
+
     /* sRGB formats */
     PIXMAN_a8r8g8b8_sRGB,
 
@@ -304,14 +304,14 @@ composite_test (image_t *dst,
 	tdst.r = convert_linear_to_srgb (tdst.r);
 	tdst.g = convert_linear_to_srgb (tdst.g);
 	tdst.b = convert_linear_to_srgb (tdst.b);
-    	round_color (dst->format, &tdst);
+	round_color (dst->format, &tdst);
 	tdst.r = convert_srgb_to_linear (tdst.r);
 	tdst.g = convert_srgb_to_linear (tdst.g);
 	tdst.b = convert_srgb_to_linear (tdst.b);
     }
     else
     {
-    	round_color (dst->format, &tdst);
+	round_color (dst->format, &tdst);
     }
 
     do_composite (op,

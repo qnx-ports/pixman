@@ -610,6 +610,24 @@ make_random_floats (int n_bytes)
     return (float *)bytes;
 }
 
+uint16_t *
+make_random_halfs (int n_bytes)
+{
+    uint8_t *bytes = fence_malloc (n_bytes);
+    uint16_t *vals = (uint16_t *)bytes;
+
+    if (!bytes)
+	return 0;
+
+    for (n_bytes /= 2; n_bytes; vals++, n_bytes--)
+    {
+        float v = (float)rand() / (float)RAND_MAX;
+	*vals = convert_float_to_half(v);
+    }
+
+    return (uint16_t *)bytes;
+}
+
 void
 a8r8g8b8_to_rgba_np (uint32_t *dst, uint32_t *src, int n_pixels)
 {
@@ -1227,6 +1245,8 @@ static const format_entry_t format_list[] =
     ENTRY (rgba_float),
 /* 96bpp formats */
     ENTRY (rgb_float),
+/* 64bpp formats */
+    ENTRY (rgba_float16),
 
 /* 32bpp formats */
     ENTRY (a8r8g8b8),
@@ -2021,7 +2041,8 @@ pixel_checker_init (pixel_checker_t *checker, pixman_format_code_t format)
     checker->format = format;
 
     if (format == PIXMAN_rgba_float ||
-	format == PIXMAN_rgb_float)
+	format == PIXMAN_rgb_float ||
+        format == PIXMAN_rgba_float16)
 	return;
 
     switch (PIXMAN_FORMAT_TYPE (format))
@@ -2100,7 +2121,8 @@ static void
 pixel_checker_require_uint32_format (const pixel_checker_t *checker)
 {
     assert (checker->format != PIXMAN_rgba_float &&
-	    checker->format != PIXMAN_rgb_float);
+	    checker->format != PIXMAN_rgb_float &&
+            checker->format != PIXMAN_rgba_float16);
 }
 
 void

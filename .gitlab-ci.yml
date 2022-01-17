@@ -1,19 +1,95 @@
-image: fedora:28
+variables:
+    DEBIAN_TAG: "2019-11-01-7"
+    DEBIAN_VERSION: buster-slim
+    DEBIAN_IMAGE: "$CI_REGISTRY_IMAGE/debian/$DEBIAN_VERSION:$DEBIAN_TAG"
 
-autotools-build:
-    script:
-    - dnf -y install dnf-plugins-core
-    - dnf -y groupinstall buildsys-build
-    - dnf -y builddep pixman
-    - ./autogen.sh
-    - make -sj4 check
+include:
+    - project: 'wayland/ci-templates'
+      file: '/templates/debian.yml'
+      ref: 03a40269
 
-meson-build:
-    script:
-    - dnf -y install dnf-plugins-core
-    - dnf -y groupinstall buildsys-build
-    - dnf -y builddep pixman
-    - dnf -y install ninja-build
-    - python3 -m pip install meson>=0.47.2
-    - meson build
-    - ninja -C build test
+stages:
+    - container
+    - build
+    - test
+
+.container:
+    stage: container
+    variables:
+        GIT_STRATEGY: none
+
+debian-10:amd64:
+    extends:
+        - .debian@container-ifnot-exists
+        - .container
+    variables:
+        # DEBIAN_DEBS: 'gcc pkg-config meson'
+        DEBIAN_EXEC: 'bash .gitlab-ci/debian-install.sh'
+
+.use-debian-10:amd64:
+    image: $DEBIAN_IMAGE
+    needs:
+        - debian-10:amd64
+
+.build:
+    stage: build
+    artifacts:
+        when: always
+        paths:
+            - build/meson-logs/*
+
+.build-debian-10:
+    extends:
+        - .build
+        - .use-debian-10:amd64
+    script: 'bash .gitlab-ci/meson-build.sh'
+
+build-amd64:
+    extends:
+        - .build-debian-10
+
+.build-i386:
+    extends:
+        - .build-debian-10
+    variables:
+        CROSS: i386
+
+build-amd64-ubsan:
+    extends:
+        - build-amd64
+    variables:
+        UBSAN: ubsan
+    allow_failure: true
+
+# the cross builds below are disabled until OpenMP works for cross-builds,
+# since they take far too long to complete without that.
+
+.build-s390x:
+    extends:
+        - .build-debian-10
+    variables:
+        CROSS: s390x
+
+.build-mips:
+    extends:
+        - .build-debian-10
+    variables:
+        CROSS: mips
+
+.build-ppc64el:
+    extends:
+        - .build-debian-10
+    variables:
+        CROSS: ppc64el
+
+.build-armhf:
+    extends:
+        - .build-debian-10
+    variables:
+        CROSS: armhf
+
+.build-arm64:
+    extends:
+        - .build-debian-10
+    variables:
+        CROSS: arm64
