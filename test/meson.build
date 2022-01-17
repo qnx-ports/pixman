@@ -20,22 +20,22 @@
 
 tests = [
   'oob-test',
-  'infinite-loop',
-  'trap-crasher',
+  'infinite-loop-test',
+  'trap-crasher-test',
   'fence-image-self-test',
   'region-translate-test',
   'fetch-test',
   'a1-trap-test',
   'prng-test',
-  'radial-invalid',
+  'radial-invalid-test',
   'pdf-op-test',
   'region-test',
   'combiner-test',
   'scaling-crash-test',
-  'alpha-loop',
+  'alpha-loop-test',
   'scaling-helpers-test',
   'rotate-test',
-  'alphamap',
+  'alphamap-test',
   'gradient-crash-test',
   'pixel-test',
   'matrix-test',
@@ -49,7 +49,7 @@ tests = [
   'blitters-test',
   'affine-test',
   'scaling-test',
-  'composite',
+  'composite-test',
   'tolerance-test',
 ]
 
@@ -84,6 +84,7 @@ foreach t : tests
     ),
     timeout : 120,
     is_parallel : true,
+    should_fail : meson.get_cross_property('xfail', '').contains(t),
   )
 endforeach
 

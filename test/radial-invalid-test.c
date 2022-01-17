@@ -21,7 +21,7 @@ main ()
 	    },
 	};
 
-    static const pixman_gradient_stop_t stops[] = 
+    static const pixman_gradient_stop_t stops[] =
     {
 	{ 0xde61, { 0x4481, 0x96e8, 0x1e6a, 0x29e1 } },
 	{ 0xfdd5, { 0xfa10, 0xcc26, 0xbc43, 0x1eb7 } },
