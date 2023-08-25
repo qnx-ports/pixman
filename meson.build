@@ -89,6 +89,60 @@ elif use_loongson_mmi.enabled()
   error('Loongson MMI Support unavailable, but required')
 endif
 
+use_lsx = get_option('lsx')
+have_lsx = false
+lsx_flags = ['-mlsx']
+if not use_lsx.disabled()
+  if host_machine.cpu_family() == 'loongarch64' and cc.compiles('''
+      #ifndef __loongarch__
+      #error "LSX is only available on LoongArch"
+      #endif
+      #include <lsxintrin.h>
+      int main () {
+          __m128i tmp0, tmp1;
+          tmp0 = __lsx_vadd_w(tmp0, tmp1);
+          return 0;
+      }''',
+      args : lsx_flags,
+      include_directories : include_directories('.'),
+      name : 'LoongArch LSX Intrinsic Support')
+    have_lsx = true
+  endif
+endif
+
+if have_lsx
+  config.set10('USE_LOONGARCH_LSX', true)
+elif use_lsx.enabled()
+  error('LoongArch LSX Support unavailable, but required')
+endif
+
+use_lasx = get_option('lasx')
+have_lasx = false
+lasx_flags = ['-mlasx']
+if not use_lasx.disabled()
+  if host_machine.cpu_family() == 'loongarch64' and cc.compiles('''
+      #ifndef __loongarch__
+      #error "LASX is only available on LoongArch"
+      #endif
+      #include <lasxintrin.h>
+      int main () {
+          __m256i tmp0, tmp1;
+          tmp0 = __lasx_xvadd_w(tmp0, tmp1);
+          return 0;
+      }''',
+      args : lasx_flags,
+      include_directories : include_directories('.'),
+      name : 'LoongArch LASX Intrinsic Support')
+    have_lasx = true
+  endif
+endif
+
+if have_lasx
+  config.set10('USE_LOONGARCH_LASX', true)
+elif use_lasx.enabled()
+  error('LoongArch LASX Support unavailable, but required')
+endif
+
 use_mmx = get_option('mmx')
 have_mmx = false
 mmx_flags = []

@@ -57,6 +57,8 @@ simds = [
    ['pixman-arma64-neon-asm.S', 'pixman-arma64-neon-asm-bilinear.S']],
   ['mips-dspr2', have_mips_dspr2, mips_dspr2_flags,
    ['pixman-mips-dspr2-asm.S', 'pixman-mips-memcpy-asm.S']],
+  ['lsx', have_lsx, lsx_flags, []],
+  ['lasx', have_lasx, lasx_flags, []],
 ]
 
 foreach simd : simds
@@ -83,6 +85,7 @@ pixman_files = files(
   'pixman-mips.c',
   'pixman-arm.c',
   'pixman-ppc.c',
+  'pixman-loongarch.c',
   'pixman-edge.c',
   'pixman-edge-accessors.c',
   'pixman-fast-path.c',

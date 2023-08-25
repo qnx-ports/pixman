@@ -24,6 +24,16 @@ option(
   description : 'Use Loongson MMI intrinsic optimized paths',
 )
 option(
+  'lsx',
+  type : 'feature',
+  description : 'Use LoongArch LSX intrinsic optimized paths',
+)
+option(
+  'lasx',
+  type : 'feature',
+  description : 'Use LoongArch LASX intrinsic optimized paths',
+)
+option(
   'mmx',
   type : 'feature',
   description : 'Use X86 MMX intrinsic optimized paths',
