@@ -1,4 +1,4 @@
-image: fedora:28
+image: fedora:29
 
 meson-build:
     script:
@@ -9,3 +9,49 @@ meson-build:
     - python3 -m pip install meson>=0.52.1
     - meson build
     - ninja -C build test
+
+sanitize-address-build:
+    script:
+    - dnf -y install llvm
+    - dnf -y install clang
+    - dnf -y install dnf-plugins-core
+    - dnf -y groupinstall buildsys-build
+    - dnf -y builddep pixman
+    - ./autogen.sh
+    - CC=clang CFLAGS="-g -O2 -fno-omit-frame-pointer -fsanitize=address" LDFLAGS="-fsanitize=address" ./configure --disable-shared
+    - make -sj4 check
+    artifacts:
+        when: on_failure
+        paths:
+            - test/*.log
+
+sanitize-memory-build:
+    script:
+    - dnf -y install llvm
+    - dnf -y install clang
+    - dnf -y install dnf-plugins-core
+    - dnf -y groupinstall buildsys-build
+    - dnf -y builddep pixman
+    - ./autogen.sh
+    - CC=clang CFLAGS="-g -O1 -fno-omit-frame-pointer -fsanitize=memory -fsanitize-memory-track-origins=2" LDFLAGS="-fsanitize=memory" ./configure --disable-shared
+    - MSAN_OPTIONS=exitcode=1 make -sj4 check
+    artifacts:
+        when: on_failure
+        paths:
+            - test/*.log
+
+sanitize-undefined-build:
+    script:
+    - dnf -y install llvm
+    - dnf -y install clang
+    - dnf -y install dnf-plugins-core
+    - dnf -y groupinstall buildsys-build
+    - dnf -y builddep pixman
+    - ./autogen.sh
+    - CC=clang CFLAGS="-g -O2 -fno-omit-frame-pointer -fsanitize=undefined -fno-sanitize-recover=undefined" LDFLAGS="-fsanitize=undefined" ./configure --disable-shared
+    - UBSAN_OPTIONS=print_stacktrace=1 make -sj4 check
+    artifacts:
+        when: on_failure
+        paths:
+            - test/*.log
+
