@@ -1,0 +1,14 @@
+---
+BasedOnStyle: LLVM
+BraceWrapping:
+  IndentBraces: true
+ConstructorInitializerIndentWidth: 4
+ContinuationIndentWidth: 4
+IndentAccessModifiers: true
+IndentCaseBlocks: true
+IndentCaseLabels: true
+IndentWidth: 4
+BreakBeforeBraces: Allman
+AttributeMacros: ['__attribute__']
+AlignConsecutiveMacros: true
+PenaltyBreakFirstLessLess: 120
