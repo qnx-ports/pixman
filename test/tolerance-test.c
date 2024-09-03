@@ -126,11 +126,11 @@ create_image (pixman_image_t **clone)
 }
 
 static pixman_bool_t
-access (pixman_image_t *image, int x, int y, uint32_t *pixel)
+access (pixman_image_t *image, int x, int y, const uint8_t **pixel)
 {
     int bytes_per_pixel;
     int stride;
-    uint8_t *location;
+    const uint8_t *location;
 
     if (x < 0 || x >= image->bits.width || y < 0 || y >= image->bits.height)
         return FALSE;
@@ -138,16 +138,8 @@ access (pixman_image_t *image, int x, int y, uint32_t *pixel)
     bytes_per_pixel = PIXMAN_FORMAT_BPP (image->bits.format) / 8;
     stride = image->bits.rowstride * 4;
     
-    location = (uint8_t *)image->bits.bits + y * stride + x * bytes_per_pixel;
-
-    if (bytes_per_pixel == 4)
-        *pixel = *(uint32_t *)location;
-    else if (bytes_per_pixel == 2)
-        *pixel = *(uint16_t *)location;
-    else if (bytes_per_pixel == 1)
-        *pixel = *(uint8_t *)location;
-    else
-	assert (0);
+    location = (const uint8_t *)image->bits.bits + y * stride + x * bytes_per_pixel;
+    *pixel = location;
 
     return TRUE;
 }
@@ -157,7 +149,7 @@ get_color (pixel_checker_t *checker,
 	   pixman_image_t *image,
 	   int x, int y,
 	   color_t *color,
-	   uint32_t *pixel)
+	   const uint8_t **pixel)
 {
     if (!access (image, x, y, pixel))
     {
@@ -186,6 +178,7 @@ verify (int test_no,
 	pixman_dither_t dither)
 {
     pixel_checker_t dest_checker, src_checker, mask_checker;
+    char buf[128];
     int i, j;
 
     pixel_checker_init (&src_checker, source->bits.format);
@@ -201,8 +194,8 @@ verify (int test_no,
     {
         for (i = x; i < x + width; ++i)
         {
-            color_t src_color, mask_color, orig_dest_color, result;
-            uint32_t dest_pixel, orig_dest_pixel, src_pixel, mask_pixel;
+	    color_t src_color, mask_color, orig_dest_color, result;
+	    const uint8_t *dest_pixel, *orig_dest_pixel, *src_pixel, *mask_pixel;
 
             access (dest, i, j, &dest_pixel);
 
@@ -224,7 +217,7 @@ verify (int test_no,
 
             if (!pixel_checker_check (&dest_checker, dest_pixel, &result))
             {
-                int a, r, g, b;
+		ucolor_t u;
 
                 printf ("--------- Test 0x%x failed ---------\n", test_no);
                 
@@ -243,31 +236,38 @@ verify (int test_no,
                         format_name (dest->bits.format),
 			dest->bits.width, dest->bits.height);
                 printf ("   -- Failed pixel: (%d, %d) --\n", i, j);
-                printf ("   source ARGB:      %f  %f  %f  %f   (pixel: %x)\n",
+		pixel_checker_convert_pixel_to_string(&src_checker, src_pixel, buf, sizeof buf);
+		printf ("   source ARGB:      %f  %f  %f  %f   (pixel: %s)\n",
                         src_color.a, src_color.r, src_color.g, src_color.b,
-                        src_pixel);
-                printf ("   mask ARGB:        %f  %f  %f  %f   (pixel: %x)\n",
+			buf);
+		pixel_checker_convert_pixel_to_string(&mask_checker, mask_pixel, buf, sizeof buf);
+		printf ("   mask ARGB:        %f  %f  %f  %f   (pixel: %s)\n",
                         mask_color.a, mask_color.r, mask_color.g, mask_color.b,
-                        mask_pixel);
-                printf ("   dest ARGB:        %f  %f  %f  %f   (pixel: %x)\n",
+			buf);
+		pixel_checker_convert_pixel_to_string(&dest_checker, orig_dest_pixel, buf, sizeof buf);
+		printf ("   dest ARGB:        %f  %f  %f  %f   (pixel: %s)\n",
                         orig_dest_color.a, orig_dest_color.r, orig_dest_color.g, orig_dest_color.b,
-                        orig_dest_pixel);
+			buf);
                 printf ("   expected ARGB:    %f  %f  %f  %f\n",
                         result.a, result.r, result.g, result.b);
 
-                pixel_checker_get_min (&dest_checker, &result, &a, &r, &g, &b);
-                printf ("   min acceptable:   %8d  %8d  %8d  %8d\n", a, r, g, b);
+		pixel_checker_get_min (&dest_checker, &result, &u);
+		printf ("   min acceptable:   %8g  %8g  %8g  %8g\n", u.a, u.r, u.g, u.b);
 
-                pixel_checker_split_pixel (&dest_checker, dest_pixel, &a, &r, &g, &b);
-                printf ("   got:              %8d  %8d  %8d  %8d   (pixel: %x)\n", a, r, g, b, dest_pixel);
+		pixel_checker_convert_pixel_to_string(&dest_checker, dest_pixel, buf, sizeof buf);
+		pixel_checker_split_pixel (&dest_checker, dest_pixel, &u);
+		printf ("   got:              %8g  %8g  %8g  %8g   (pixel: %s)\n", u.a, u.r, u.g, u.b, buf);
                 
-                pixel_checker_get_max (&dest_checker, &result, &a, &r, &g, &b);
-                printf ("   max acceptable:   %8d  %8d  %8d  %8d\n", a, r, g, b);
+		pixel_checker_get_max (&dest_checker, &result, &u);
+		printf ("   max acceptable:   %8g  %8g  %8g  %8g\n", u.a, u.r, u.g, u.b);
 		printf ("\n");
 		printf ("    { %s,\n", operator_name (op));
-		printf ("      PIXMAN_%s,\t0x%x,\n", format_name (source->bits.format), src_pixel);
-		printf ("      PIXMAN_%s,\t0x%x,\n", format_name (mask->bits.format), mask_pixel);
-		printf ("      PIXMAN_%s,\t0x%x\n", format_name (dest->bits.format), orig_dest_pixel);
+		pixel_checker_convert_pixel_to_string(&src_checker, src_pixel, buf, sizeof buf);
+		printf ("      PIXMAN_%s,\t%s,\n", format_name (source->bits.format), buf);
+		pixel_checker_convert_pixel_to_string(&mask_checker, mask_pixel, buf, sizeof buf);
+		printf ("      PIXMAN_%s,\t%s,\n", format_name (mask->bits.format), buf);
+		pixel_checker_convert_pixel_to_string(&dest_checker, orig_dest_pixel, buf, sizeof buf);
+		printf ("      PIXMAN_%s,\t%s\n", format_name (dest->bits.format), buf);
 		printf ("    },\n");
                 return FALSE;
             }
