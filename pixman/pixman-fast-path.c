@@ -83,7 +83,11 @@ static force_inline uint32_t
 over (uint32_t src,
       uint32_t dest)
 {
+#ifdef WORDS_BIGENDIAN
+    uint32_t a = ~(src & 0xff);
+#else
     uint32_t a = ~src >> 24;
+#endif
 
     UN8x4_MUL_UN8_ADD_UN8x4 (dest, a, src);
 
