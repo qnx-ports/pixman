@@ -422,6 +422,12 @@ create_random_bits_image (alpha_preference_t alpha_preference)
     pixman_image_set_accessors (image, read_func, write_func);
     pixman_image_set_filter (image, filter, coefficients, n_coefficients);
 
+    image_common_t *common = (image_common_t *)image;
+    if (coefficients && (coefficients != common->filter_params || filter != common->filter))
+    {
+        free (coefficients);
+    }
+
     return image;
 }
 
