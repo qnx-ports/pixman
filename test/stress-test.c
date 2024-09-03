@@ -13,6 +13,7 @@ static const pixman_format_code_t image_formats[] =
 {
     PIXMAN_rgba_float,
     PIXMAN_rgb_float,
+    PIXMAN_rgba_float16,
     PIXMAN_a8r8g8b8,
     PIXMAN_x8r8g8b8,
     PIXMAN_r5g6b5,
@@ -322,6 +323,8 @@ create_random_bits_image (alpha_preference_t alpha_preference)
 	stride = (stride + align_add) & (~align_mask);
 	if (format == PIXMAN_rgb_float || format == PIXMAN_rgba_float)
 	    bits = (uint32_t *)make_random_floats (height * stride);
+        else if (format == PIXMAN_rgba_float16)
+            bits = (uint32_t *)make_random_halfs (height * stride);
 	else
 	    bits = (uint32_t *)make_random_bytes (height * stride);
 	break;
@@ -377,6 +380,8 @@ create_random_bits_image (alpha_preference_t alpha_preference)
 	stride = (stride + align_add) & (~align_mask);
 	if (format == PIXMAN_rgb_float || format == PIXMAN_rgba_float)
 	    bits = (uint32_t *)make_random_floats (height * stride);
+        else if (format == PIXMAN_rgba_float16)
+            bits = (uint32_t *)make_random_halfs (height * stride);
 	else
 	    bits = (uint32_t *)make_random_bytes (height * stride);
 	if (!bits)
