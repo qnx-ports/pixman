@@ -16,9 +16,11 @@ variables:
   DOCKER_TAG: latest
   DOCKER_IMAGE_NAME: ${CI_REGISTRY_IMAGE}/pixman:${DOCKER_TAG}
 
-  # Enable/disable specific platforms for code coverage and platform coverage targets.
-  ACTIVE_CODE_PATTERN: '/linux-386|linux-amd64|linux-arm-v5|linux-arm-v7|linux-arm64-v8|linux-mips64el|linux-mipsel|linux-ppc64le|linux-riscv64/i'
-  ACTIVE_PLT_PATTERN: '/linux-ppc|linux-ppc64|linux-mips|windows-386|windows-amd64/i'
+  # Execute to load a target-specific environment.
+  LOAD_TARGET_ENV: source .gitlab-ci.d/01-docker/target-env/${TARGET}.env
+
+  # Enable/disable specific targets for code and platform coverage targets.
+  ACTIVE_TARGET_PATTERN: '/linux-386|linux-amd64|linux-arm-v5|linux-arm-v7|linux-arm64-v8|linux-mips|linux-mips64el|linux-mipsel|linux-ppc|linux-ppc64|linux-ppc64le|linux-riscv64|windows-686|windows-amd64|windows-arm64-v8/i'
 
 workflow:
   rules:
@@ -51,7 +53,7 @@ default:
   retry: 1
 
 include:
-  - local: "/.gitlab-ci.d/platform-templates.yml"
+  - local: "/.gitlab-ci.d/templates/targets.yml"
   - local: "/.gitlab-ci.d/01-docker.yml"
   - local: "/.gitlab-ci.d/02-build.yml"
   - local: "/.gitlab-ci.d/03-test.yml"
