@@ -655,6 +655,20 @@ pixman_implementation_t *
 _pixman_implementation_create_vmx (pixman_implementation_t *fallback);
 #endif
 
+#ifdef USE_LOONGARCH_LSX
+pixman_implementation_t *
+_pixman_implementation_create_lsx (pixman_implementation_t *fallback);
+
+void setup_accessors_lsx (bits_image_t *image);
+#endif
+
+#ifdef USE_LOONGARCH_LASX
+pixman_implementation_t *
+_pixman_implementation_create_lasx (pixman_implementation_t *fallback);
+
+void setup_accessors_lasx (bits_image_t *image);
+#endif
+
 pixman_bool_t
 _pixman_implementation_disabled (const char *name);
 
@@ -669,6 +683,11 @@ _pixman_ppc_get_implementations (pixman_implementation_t *imp);
 
 pixman_implementation_t *
 _pixman_mips_get_implementations (pixman_implementation_t *imp);
+
+pixman_implementation_t *
+_pixman_loongarch_get_implementations (pixman_implementation_t *imp);
+
+void setup_loongarch_accessors (bits_image_t *image);
 
 pixman_implementation_t *
 _pixman_choose_implementation (void);
